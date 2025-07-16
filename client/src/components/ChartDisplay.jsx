@@ -5,16 +5,21 @@ import {
   Chart as ChartJS,
   BarElement,
   LineElement,
+  LineController,
+  BarController,
+  PointElement,
   CategoryScale,
   LinearScale,
-  PointElement,
   Title,
   Tooltip,
   Legend,
 } from "chart.js";
 import "./ChartDisplay.css";
 
+// ✅ Register all required Chart.js elements and controllers
 ChartJS.register(
+  BarController,
+  LineController,
   BarElement,
   LineElement,
   PointElement,
@@ -28,16 +33,13 @@ ChartJS.register(
 const ChartDisplay = () => {
   const [chartData, setChartData] = useState(null);
   const [valueKey, setValueKey] = useState("");
+  const [error, setError] = useState("");
 
   useEffect(() => {
     axios
       .get(`${import.meta.env.VITE_API_BASE_URL}/api/csv`)
       .then((res) => {
-        const latest = res.data[res.data.length - 1]?.data || [];
-        if (!Array.isArray(latest) || latest.length === 0) {
-          setChartData(null);
-          return;
-        }
+        const latest = res.data?.[res.data.length - 1]?.data || [];
 
         const validRow = latest.find(
           (row) =>
@@ -47,7 +49,7 @@ const ChartDisplay = () => {
         );
 
         if (!validRow) {
-          setChartData(null);
+          setError("No valid data found for chart.");
           return;
         }
 
@@ -64,9 +66,10 @@ const ChartDisplay = () => {
           const value = parseFloat(row[valueKey]);
 
           if (
-            label !== undefined &&
-            value !== undefined &&
-            !isNaN(value)
+            typeof label === "string" &&
+            !isNaN(value) &&
+            value !== null &&
+            value !== ""
           ) {
             labels.push(label);
             values.push(value);
@@ -74,7 +77,7 @@ const ChartDisplay = () => {
         }
 
         if (labels.length === 0 || values.length === 0) {
-          setChartData(null);
+          setError("Chart data is empty or invalid.");
           return;
         }
 
@@ -104,8 +107,8 @@ const ChartDisplay = () => {
         });
       })
       .catch((err) => {
-        console.error("Chart data fetch failed:", err);
-        setChartData(null);
+        console.error("❌ Chart fetch failed:", err);
+        setError("Failed to load chart data.");
       });
   }, []);
 
@@ -143,7 +146,7 @@ const ChartDisplay = () => {
       },
       title: {
         display: true,
-        text: valueKey ? `Bar + Line Chart for ${valueKey}` : "",
+        text: valueKey ? `Bar + Line Chart for ${valueKey}` : "Chart",
         color: "#ffffff",
         font: { size: 18 },
       },
@@ -154,21 +157,23 @@ const ChartDisplay = () => {
     return (
       <div className="chart-wrapper">
         <div className="chart-card">
-          {chartData ? (
+          {error ? (
+            <p className="loading" style={{ color: "red" }}>{error}</p>
+          ) : chartData ? (
             <div style={{ height: "400px", overflowX: "auto" }}>
               <Bar data={chartData} options={chartOptions} />
             </div>
           ) : (
-            <p className="loading">No chart data available.</p>
+            <p className="loading">Loading chart...</p>
           )}
         </div>
       </div>
     );
   } catch (err) {
-    console.error("Chart render error:", err);
+    console.error("❌ Chart render error:", err);
     return (
       <p className="loading" style={{ color: "red" }}>
-        Chart rendering failed. Check data format.
+        Chart failed to render.
       </p>
     );
   }
