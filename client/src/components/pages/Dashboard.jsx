@@ -11,14 +11,15 @@ function Dashboard() {
   const [filteredData, setFilteredData] = useState([]);
   const [file, setFile] = useState(null);
   const [search, setSearch] = useState("");
+  const [error, setError] = useState("");
 
+  // ✅ Fetch latest dataset on mount
   useEffect(() => {
     axios
       .get(`${import.meta.env.VITE_API_BASE_URL}/api/csv`)
       .then((res) => {
-        const latest = Array.isArray(res.data)
-          ? res.data[res.data.length - 1]?.data || []
-          : [];
+        const datasets = Array.isArray(res.data) ? res.data : [];
+        const latest = datasets[datasets.length - 1]?.data || [];
 
         const cleaned = latest.filter(
           (row) =>
@@ -32,10 +33,12 @@ function Dashboard() {
         setFilteredData(cleaned);
       })
       .catch((err) => {
-        console.error("Failed to load dashboard data", err);
+        console.error("Failed to load dashboard data:", err);
+        setError("Failed to load dashboard data.");
       });
   }, []);
 
+  // ✅ Upload CSV
   const handleUpload = async () => {
     if (!file) return alert("Please select a file.");
     const formData = new FormData();
@@ -49,43 +52,43 @@ function Dashboard() {
       alert("CSV uploaded successfully!");
       window.location.reload();
     } catch (err) {
-      console.error("Upload error:", err);
-      alert("Failed to upload CSV.");
+      console.error("Upload failed:", err);
+      alert("Upload failed. Try again.");
     }
   };
 
+  // ✅ Filter by search
   useEffect(() => {
     if (!search.trim()) {
       setFilteredData(data);
     } else {
-      const lowerSearch = search.toLowerCase();
-      const filtered = data.filter((row) =>
+      const query = search.toLowerCase();
+      const result = data.filter((row) =>
         Object.values(row).some((val) =>
-          val?.toString().toLowerCase().includes(lowerSearch)
+          val?.toString().toLowerCase().includes(query)
         )
       );
-      setFilteredData(filtered);
+      setFilteredData(result);
     }
   }, [search, data]);
 
+  // ✅ Summary (total + average)
   const getSummary = () => {
-    const sample = filteredData.find(
-      (row) =>
-        row &&
-        typeof row === "object" &&
-        Object.keys(row).length >= 2
-    );
+    if (!filteredData.length) return { total: 0, average: 0, key: "" };
 
+    const sample = filteredData.find(
+      (row) => row && typeof row === "object" && Object.keys(row).length >= 2
+    );
     if (!sample) return { total: 0, average: 0, key: "" };
 
     const keys = Object.keys(sample);
     const valueKey = keys[1];
 
     const values = filteredData
-      .map((item) => parseFloat(item?.[valueKey]))
+      .map((item) => parseFloat(item[valueKey]))
       .filter(Number.isFinite);
 
-    const total = values.reduce((acc, curr) => acc + curr, 0);
+    const total = values.reduce((acc, val) => acc + val, 0);
     const average = values.length ? total / values.length : 0;
 
     return {
@@ -95,35 +98,34 @@ function Dashboard() {
     };
   };
 
+  // ✅ PDF Export
   const exportPDF = async () => {
     const doc = new jsPDF("p", "pt", "a4");
 
-    const addElementToPDF = async (selector, yOffset = 40) => {
+    const addToPDF = async (selector, y = 40) => {
       const element = document.querySelector(selector);
-      if (!element) return yOffset;
+      if (!element) return y;
 
       const canvas = await html2canvas(element, { scale: 2 });
       const imgData = canvas.toDataURL("image/png");
-      const pdfWidth = doc.internal.pageSize.getWidth() - 80;
-      const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+      const width = doc.internal.pageSize.getWidth() - 80;
+      const height = (canvas.height * width) / canvas.width;
 
-      doc.addImage(imgData, "PNG", 40, yOffset, pdfWidth, imgHeight);
-      return yOffset + imgHeight + 30;
+      doc.addImage(imgData, "PNG", 40, y, width, height);
+      return y + height + 30;
     };
 
     let y = 40;
-    y = await addElementToPDF(".summary-panel", y);
-    y = await addElementToPDF(".data-table", y);
-    y = await addElementToPDF(".chart-container", y);
+    y = await addToPDF(".summary-panel", y);
+    y = await addToPDF(".data-table", y);
+    y = await addToPDF(".chart-container", y);
 
     doc.save("insightboard_dashboard.pdf");
   };
 
   try {
     const headers =
-      Array.isArray(filteredData) &&
-      filteredData.length > 0 &&
-      typeof filteredData[0] === "object"
+      filteredData.length && typeof filteredData[0] === "object"
         ? Object.keys(filteredData[0])
         : [];
 
@@ -147,15 +149,11 @@ function Dashboard() {
               <h3>Summary</h3>
               {key ? (
                 <>
-                  <p>
-                    <strong>Total {key}:</strong> {total}
-                  </p>
-                  <p>
-                    <strong>Average {key}:</strong> {average}
-                  </p>
+                  <p><strong>Total {key}:</strong> {total}</p>
+                  <p><strong>Average {key}:</strong> {average}</p>
                 </>
               ) : (
-                <p>No numeric column available for summary.</p>
+                <p>No numeric column found.</p>
               )}
             </div>
           </div>
@@ -166,7 +164,7 @@ function Dashboard() {
                 <input
                   type="text"
                   className="filter-input"
-                  placeholder="Search in data..."
+                  placeholder="Search..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
@@ -203,15 +201,21 @@ function Dashboard() {
             </>
           ) : (
             <p className="no-data-msg">
-              No valid data found. Please upload a clean CSV file with at least 2 columns.
+              No valid data available. Please upload a proper CSV.
             </p>
           )}
+
+          {error && <p style={{ color: "red" }}>{error}</p>}
         </div>
       </>
     );
-  } catch (err) {
-    console.error("❌ Rendering failed:", err);
-    return <p style={{ color: "red", padding: "2rem" }}>Something went wrong while rendering the dashboard.</p>;
+  } catch (e) {
+    console.error("❌ Render crash in Dashboard:", e);
+    return (
+      <p style={{ color: "red", padding: "2rem" }}>
+        Something went wrong while loading the dashboard.
+      </p>
+    );
   }
 }
 
