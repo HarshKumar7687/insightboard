@@ -9,9 +9,10 @@ import "./Dashboard.css";
 function Dashboard() {
   const [data, setData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
-  const [file, setFile] = useState();
+  const [file, setFile] = useState(null);
   const [search, setSearch] = useState("");
 
+  // Fetch uploaded CSV data
   useEffect(() => {
     axios
       .get(`${import.meta.env.VITE_API_BASE_URL}/api/csv`)
@@ -27,6 +28,7 @@ function Dashboard() {
       });
   }, []);
 
+  // Upload CSV
   const handleUpload = async () => {
     if (!file) return alert("Please select a file.");
     const formData = new FormData();
@@ -45,6 +47,7 @@ function Dashboard() {
     }
   };
 
+  // Filter data
   useEffect(() => {
     if (!search.trim()) {
       setFilteredData(data);
@@ -59,15 +62,18 @@ function Dashboard() {
     }
   }, [search, data]);
 
+  // Safely calculate total and average
   const getSummary = () => {
-    if (!filteredData.length || !filteredData[0]) {
+    if (
+      !filteredData.length ||
+      !filteredData[0] ||
+      typeof filteredData[0] !== "object"
+    ) {
       return { total: 0, average: 0, key: "" };
     }
 
     const keys = Object.keys(filteredData[0]);
-    if (keys.length < 2) {
-      return { total: 0, average: 0, key: "" };
-    }
+    if (keys.length < 2) return { total: 0, average: 0, key: "" };
 
     const valueKey = keys[1];
     const values = filteredData
@@ -84,6 +90,7 @@ function Dashboard() {
     };
   };
 
+  // Export to PDF
   const exportPDF = async () => {
     const doc = new jsPDF("p", "pt", "a4");
 
@@ -108,7 +115,15 @@ function Dashboard() {
     doc.save("insightboard_dashboard.pdf");
   };
 
-  const headers = filteredData.length > 0 ? Object.keys(filteredData[0]) : [];
+  // Safe header render
+  const headers =
+    filteredData.length > 0 &&
+    filteredData[0] &&
+    typeof filteredData[0] === "object" &&
+    !Array.isArray(filteredData[0])
+      ? Object.keys(filteredData[0])
+      : [];
+
   const { total, average, key } = getSummary();
 
   return (
@@ -129,8 +144,12 @@ function Dashboard() {
             <h3>Summary</h3>
             {key ? (
               <>
-                <p><strong>Total {key}:</strong> {total}</p>
-                <p><strong>Average {key}:</strong> {average}</p>
+                <p>
+                  <strong>Total {key}:</strong> {total}
+                </p>
+                <p>
+                  <strong>Average {key}:</strong> {average}
+                </p>
               </>
             ) : (
               <p>No numeric column available for summary.</p>
@@ -182,7 +201,9 @@ function Dashboard() {
         )}
 
         {filteredData.length === 0 && (
-          <p className="no-data-msg">No data to display. Please upload a file.</p>
+          <p className="no-data-msg">
+            No data to display. Please upload a valid CSV or Excel file.
+          </p>
         )}
       </div>
     </>
