@@ -12,7 +12,6 @@ function Dashboard() {
   const [file, setFile] = useState(null);
   const [search, setSearch] = useState("");
 
-  // Fetch uploaded CSV data
   useEffect(() => {
     axios
       .get(`${import.meta.env.VITE_API_BASE_URL}/api/csv`)
@@ -20,15 +19,24 @@ function Dashboard() {
         const latest = Array.isArray(res.data)
           ? res.data[res.data.length - 1]?.data || []
           : [];
-        setData(latest);
-        setFilteredData(latest);
+
+        // Filter only rows with at least 2 keys
+        const cleaned = latest.filter(
+          (row) =>
+            row &&
+            typeof row === "object" &&
+            !Array.isArray(row) &&
+            Object.keys(row).length >= 2
+        );
+
+        setData(cleaned);
+        setFilteredData(cleaned);
       })
       .catch((err) => {
         console.error("Failed to load dashboard data", err);
       });
   }, []);
 
-  // Upload CSV
   const handleUpload = async () => {
     if (!file) return alert("Please select a file.");
     const formData = new FormData();
@@ -47,7 +55,6 @@ function Dashboard() {
     }
   };
 
-  // Filter data
   useEffect(() => {
     if (!search.trim()) {
       setFilteredData(data);
@@ -62,37 +69,33 @@ function Dashboard() {
     }
   }, [search, data]);
 
-  // Safely calculate total and average
-const getSummary = () => {
-  if (!Array.isArray(filteredData) || filteredData.length === 0) {
-    return { total: 0, average: 0, key: "" };
-  }
+  const getSummary = () => {
+    const sample = filteredData.find(
+      (row) =>
+        row &&
+        typeof row === "object" &&
+        Object.keys(row).length >= 2
+    );
 
-  const sample = filteredData.find(
-    (row) =>
-      row && typeof row === "object" && !Array.isArray(row) && Object.keys(row).length > 1
-  );
+    if (!sample) return { total: 0, average: 0, key: "" };
 
-  if (!sample) return { total: 0, average: 0, key: "" };
+    const keys = Object.keys(sample);
+    const valueKey = keys[1];
 
-  const keys = Object.keys(sample);
-  const valueKey = keys[1]; // e.g. "Score"
+    const values = filteredData
+      .map((item) => parseFloat(item?.[valueKey]))
+      .filter(Number.isFinite);
 
-  const values = filteredData
-    .map((item) => parseFloat(item?.[valueKey]))
-    .filter(Number.isFinite);
+    const total = values.reduce((acc, curr) => acc + curr, 0);
+    const average = values.length ? total / values.length : 0;
 
-  const total = values.reduce((acc, curr) => acc + curr, 0);
-  const average = values.length ? total / values.length : 0;
-
-  return {
-    total: total.toFixed(2),
-    average: average.toFixed(2),
-    key: valueKey,
+    return {
+      total: total.toFixed(2),
+      average: average.toFixed(2),
+      key: valueKey,
+    };
   };
-};
 
-  // Export to PDF
   const exportPDF = async () => {
     const doc = new jsPDF("p", "pt", "a4");
 
@@ -117,7 +120,6 @@ const getSummary = () => {
     doc.save("insightboard_dashboard.pdf");
   };
 
-  // Safe header render
   const headers =
     filteredData.length > 0 &&
     filteredData[0] &&
@@ -159,7 +161,7 @@ const getSummary = () => {
           </div>
         </div>
 
-        {filteredData.length > 0 && (
+        {filteredData.length > 0 ? (
           <>
             <div className="filter-bar">
               <input
@@ -200,11 +202,9 @@ const getSummary = () => {
               <button onClick={exportPDF}>Export as PDF</button>
             </div>
           </>
-        )}
-
-        {filteredData.length === 0 && (
+        ) : (
           <p className="no-data-msg">
-            No data to display. Please upload a valid CSV or Excel file.
+            No valid data found. Please upload a clean CSV file with at least 2 columns.
           </p>
         )}
       </div>
