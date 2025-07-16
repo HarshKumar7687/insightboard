@@ -32,8 +32,8 @@ const ChartDisplay = () => {
   useEffect(() => {
     axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/csv`)
       .then((res) => {
-        const latest = res.data[res.data.length - 1]?.data || [];
-        if (latest.length === 0) return;
+        const latest = Array.isArray(res.data) ? res.data[res.data.length - 1]?.data || [] : [];
+        if (!latest.length || !latest[0]) return;
 
         const keys = Object.keys(latest[0]);
         if (keys.length < 2) return;
@@ -66,7 +66,7 @@ const ChartDisplay = () => {
               fill: true,
               yAxisID: "y",
               type: "line",
-            }
+            },
           ],
         });
       })
@@ -80,7 +80,12 @@ const ChartDisplay = () => {
     maintainAspectRatio: false,
     scales: {
       x: {
-        ticks: { color: "#ffffff", font: { size: 10 }, maxRotation: 90, minRotation: 45 },
+        ticks: {
+          color: "#ffffff",
+          font: { size: 10 },
+          maxRotation: 90,
+          minRotation: 45,
+        },
         grid: { color: "rgba(255,255,255,0.1)" },
       },
       y: {
@@ -94,7 +99,7 @@ const ChartDisplay = () => {
       },
       title: {
         display: true,
-        text: `Bar + Line Chart for ${valueKey}`,
+        text: valueKey ? `Bar + Line Chart for ${valueKey}` : "Chart Data",
         color: "#ffffff",
         font: { size: 18 },
       },
