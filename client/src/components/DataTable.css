@@ -1,0 +1,38 @@
+.table-container {
+  overflow-x: auto;
+  margin-top: 16px;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #ccc;
+  font-family: Arial, sans-serif;
+}
+
+.data-table thead {
+  background-color: #f3f3f3;
+}
+
+.data-table th,
+.data-table td {
+  padding: 12px;
+  border: 1px solid #ccc;
+  text-align: left;
+}
+
+.data-table tr:nth-child(even) {
+  background-color: #fafafa;
+}
+
+.filter-bar {
+  margin-bottom: 1rem;
+  text-align: right;
+}
+
+.filter-input {
+  padding: 6px 10px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+}

@@ -1,0 +1,17 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Global Reset and Dark Theme */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  background-color: #0f172a; /* Dark blue-gray */
+  color: #f8fafc; /* Soft white */
+  font-family: 'Segoe UI', sans-serif;
+}
