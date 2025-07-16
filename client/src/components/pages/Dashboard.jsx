@@ -9,7 +9,7 @@ import "./Dashboard.css";
 function Dashboard() {
   const [data, setData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
-  const [file, setFile] = useState(null);
+  const [file, setFile] = useState();
   const [search, setSearch] = useState("");
 
   useEffect(() => {
