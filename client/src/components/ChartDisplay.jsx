@@ -30,20 +30,53 @@ const ChartDisplay = () => {
   const [valueKey, setValueKey] = useState("");
 
   useEffect(() => {
-    axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/csv`)
+    axios
+      .get(`${import.meta.env.VITE_API_BASE_URL}/api/csv`)
       .then((res) => {
-        const latest = Array.isArray(res.data) ? res.data[res.data.length - 1]?.data || [] : [];
-        if (!latest.length || !latest[0]) return;
+        const latest = res.data[res.data.length - 1]?.data || [];
+        if (!Array.isArray(latest) || latest.length === 0) {
+          setChartData(null);
+          return;
+        }
 
-        const keys = Object.keys(latest[0]);
-        if (keys.length < 2) return;
+        const validRow = latest.find(
+          (row) =>
+            row &&
+            typeof row === "object" &&
+            Object.keys(row).length >= 2
+        );
 
+        if (!validRow) {
+          setChartData(null);
+          return;
+        }
+
+        const keys = Object.keys(validRow);
         const labelKey = keys[0];
         const valueKey = keys[1];
         setValueKey(valueKey);
 
-        const labels = latest.map((item) => item[labelKey]);
-        const values = latest.map((item) => parseFloat(item[valueKey]));
+        const labels = [];
+        const values = [];
+
+        for (const row of latest) {
+          const label = row[labelKey];
+          const value = parseFloat(row[valueKey]);
+
+          if (
+            label !== undefined &&
+            value !== undefined &&
+            !isNaN(value)
+          ) {
+            labels.push(label);
+            values.push(value);
+          }
+        }
+
+        if (labels.length === 0 || values.length === 0) {
+          setChartData(null);
+          return;
+        }
 
         setChartData({
           labels,
@@ -72,6 +105,7 @@ const ChartDisplay = () => {
       })
       .catch((err) => {
         console.error("Chart data fetch failed:", err);
+        setChartData(null);
       });
   }, []);
 
@@ -86,39 +120,58 @@ const ChartDisplay = () => {
           maxRotation: 90,
           minRotation: 45,
         },
-        grid: { color: "rgba(255,255,255,0.1)" },
+        grid: {
+          color: "rgba(255,255,255,0.1)",
+        },
       },
       y: {
-        ticks: { color: "#ffffff", font: { size: 10 } },
-        grid: { color: "rgba(255,255,255,0.1)" },
+        ticks: {
+          color: "#ffffff",
+          font: { size: 10 },
+        },
+        grid: {
+          color: "rgba(255,255,255,0.1)",
+        },
       },
     },
     plugins: {
       legend: {
-        labels: { color: "#ffffff", font: { size: 12 } },
+        labels: {
+          color: "#ffffff",
+          font: { size: 12 },
+        },
       },
       title: {
         display: true,
-        text: valueKey ? `Bar + Line Chart for ${valueKey}` : "Chart Data",
+        text: valueKey ? `Bar + Line Chart for ${valueKey}` : "",
         color: "#ffffff",
         font: { size: 18 },
       },
     },
   };
 
-  return (
-    <div className="chart-wrapper">
-      <div className="chart-card">
-        {chartData ? (
-          <div style={{ height: "400px", overflowX: "auto" }}>
-            <Bar data={chartData} options={chartOptions} />
-          </div>
-        ) : (
-          <p className="loading">No chart data available.</p>
-        )}
+  try {
+    return (
+      <div className="chart-wrapper">
+        <div className="chart-card">
+          {chartData ? (
+            <div style={{ height: "400px", overflowX: "auto" }}>
+              <Bar data={chartData} options={chartOptions} />
+            </div>
+          ) : (
+            <p className="loading">No chart data available.</p>
+          )}
+        </div>
       </div>
-    </div>
-  );
+    );
+  } catch (err) {
+    console.error("Chart render error:", err);
+    return (
+      <p className="loading" style={{ color: "red" }}>
+        Chart rendering failed. Check data format.
+      </p>
+    );
+  }
 };
 
 export default ChartDisplay;
