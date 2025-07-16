@@ -44,6 +44,14 @@ exports.uploadCSV = async (req, res) => {
 };
 
 exports.getDatasets = async (req, res) => {
-  const datasets = await Dataset.find();
-  res.json(datasets);
+  try {
+    const datasets = await Dataset.find();
+    if (!Array.isArray(datasets) || datasets.length === 0) {
+      return res.status(200).json([{ data: [] }]); // ✅ SAFE default
+    }
+    res.status(200).json(datasets);
+  } catch (err) {
+    console.error("Error fetching datasets:", err);
+    res.status(500).json({ message: "Server error" });
+  }
 };
