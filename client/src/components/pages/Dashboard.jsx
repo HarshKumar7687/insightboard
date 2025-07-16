@@ -12,18 +12,24 @@ function Dashboard() {
   const [file, setFile] = useState(null);
   const [search, setSearch] = useState("");
 
+  // Fetch latest CSV data
   useEffect(() => {
-    axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/csv`)
+    axios
+      .get(`${import.meta.env.VITE_API_BASE_URL}/api/csv`)
       .then((res) => {
-        const latest = res.data[res.data.length - 1]?.data || [];
+        const latest = res.data?.[res.data.length - 1]?.data || [];
         setData(latest);
         setFilteredData(latest);
       })
-      .catch((err) => console.error("Failed to load dashboard data", err));
+      .catch((err) => {
+        console.error("Failed to load dashboard data", err);
+      });
   }, []);
 
+  // Upload CSV
   const handleUpload = async () => {
-    if (!file) return;
+    if (!file) return alert("Please select a file.");
+
     const formData = new FormData();
     formData.append("file", file);
 
@@ -32,11 +38,12 @@ function Dashboard() {
       alert("CSV uploaded successfully!");
       window.location.reload();
     } catch (err) {
-      console.error(err);
+      console.error("Upload error:", err);
       alert("Failed to upload CSV.");
     }
   };
 
+  // Filter data
   useEffect(() => {
     if (!search.trim()) {
       setFilteredData(data);
@@ -51,19 +58,33 @@ function Dashboard() {
     }
   }, [search, data]);
 
+  // Summary logic (safe)
   const getSummary = () => {
-    if (filteredData.length === 0) return { total: 0, average: 0 };
+    if (!filteredData || filteredData.length === 0 || !filteredData[0]) {
+      return { total: 0, average: 0, key: "" };
+    }
 
     const keys = Object.keys(filteredData[0]);
+    if (keys.length < 2) {
+      return { total: 0, average: 0, key: "" };
+    }
+
     const valueKey = keys[1];
-    const values = filteredData.map((item) => parseFloat(item[valueKey])).filter(Number.isFinite);
+    const values = filteredData
+      .map((item) => parseFloat(item[valueKey]))
+      .filter(Number.isFinite);
 
     const total = values.reduce((acc, curr) => acc + curr, 0);
-    const average = total / values.length;
+    const average = values.length ? total / values.length : 0;
 
-    return { total: total.toFixed(2), average: average.toFixed(2), key: valueKey };
+    return {
+      total: total.toFixed(2),
+      average: average.toFixed(2),
+      key: valueKey,
+    };
   };
 
+  // Export PDF
   const exportPDF = async () => {
     const doc = new jsPDF("p", "pt", "a4");
 
@@ -95,6 +116,7 @@ function Dashboard() {
     <>
       <Navbar />
       <div className="dashboard-wrapper">
+        {/* Upload + Summary */}
         <div className="csv-upload-row">
           <div className="csv-upload-container">
             <input
@@ -112,18 +134,22 @@ function Dashboard() {
           </div>
         </div>
 
+        {/* Filter */}
         {filteredData.length > 0 && (
-          <>
-            <div className="filter-bar">
-              <input
-                type="text"
-                className="filter-input"
-                placeholder="Search in data..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
+          <div className="filter-bar">
+            <input
+              type="text"
+              className="filter-input"
+              placeholder="Search in data..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+        )}
 
+        {/* Data Table */}
+        {headers.length > 0 && (
+          <>
             <h2>Data Table</h2>
             <table className="data-table">
               <thead>
@@ -143,19 +169,24 @@ function Dashboard() {
                 ))}
               </tbody>
             </table>
-
-            <h2>Chart</h2>
-            <div className="chart-container">
-              <ChartDisplay />
-            </div>
-
-            <div className="export-buttons">
-              <button onClick={exportPDF}>Export as PDF</button>
-            </div>
           </>
         )}
 
-        {filteredData.length === 0 && <p className="no-data-msg">No data to display. Please upload a file.</p>}
+        {/* Chart */}
+        <h2>Chart</h2>
+        <div className="chart-container">
+          <ChartDisplay />
+        </div>
+
+        {/* Export */}
+        <div className="export-buttons">
+          <button onClick={exportPDF}>Export as PDF</button>
+        </div>
+
+        {/* No data fallback */}
+        {filteredData.length === 0 && (
+          <p className="no-data-msg">No data to display. Please upload a file.</p>
+        )}
       </div>
     </>
   );
