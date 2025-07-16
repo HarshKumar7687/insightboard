@@ -20,7 +20,6 @@ function Dashboard() {
           ? res.data[res.data.length - 1]?.data || []
           : [];
 
-        // Filter only rows with at least 2 keys
         const cleaned = latest.filter(
           (row) =>
             row &&
@@ -120,96 +119,100 @@ function Dashboard() {
     doc.save("insightboard_dashboard.pdf");
   };
 
-  const headers =
-    filteredData.length > 0 &&
-    filteredData[0] &&
-    typeof filteredData[0] === "object" &&
-    !Array.isArray(filteredData[0])
-      ? Object.keys(filteredData[0])
-      : [];
+  try {
+    const headers =
+      Array.isArray(filteredData) &&
+      filteredData.length > 0 &&
+      typeof filteredData[0] === "object"
+        ? Object.keys(filteredData[0])
+        : [];
 
-  const { total, average, key } = getSummary();
+    const { total, average, key } = getSummary();
 
-  return (
-    <>
-      <Navbar />
-      <div className="dashboard-wrapper">
-        <div className="csv-upload-row">
-          <div className="csv-upload-container">
-            <input
-              type="file"
-              accept=".csv, .xlsx, .xls, .xlsm, .xlsb"
-              onChange={(e) => setFile(e.target.files[0])}
-            />
-            <button onClick={handleUpload}>Upload CSV</button>
-          </div>
-
-          <div className="summary-panel">
-            <h3>Summary</h3>
-            {key ? (
-              <>
-                <p>
-                  <strong>Total {key}:</strong> {total}
-                </p>
-                <p>
-                  <strong>Average {key}:</strong> {average}
-                </p>
-              </>
-            ) : (
-              <p>No numeric column available for summary.</p>
-            )}
-          </div>
-        </div>
-
-        {filteredData.length > 0 ? (
-          <>
-            <div className="filter-bar">
+    return (
+      <>
+        <Navbar />
+        <div className="dashboard-wrapper">
+          <div className="csv-upload-row">
+            <div className="csv-upload-container">
               <input
-                type="text"
-                className="filter-input"
-                placeholder="Search in data..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                type="file"
+                accept=".csv, .xlsx, .xls, .xlsm, .xlsb"
+                onChange={(e) => setFile(e.target.files[0])}
               />
+              <button onClick={handleUpload}>Upload CSV</button>
             </div>
 
-            <h2>Data Table</h2>
-            <table className="data-table">
-              <thead>
-                <tr>
-                  {headers.map((h) => (
-                    <th key={h}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filteredData.map((row, idx) => (
-                  <tr key={idx}>
+            <div className="summary-panel">
+              <h3>Summary</h3>
+              {key ? (
+                <>
+                  <p>
+                    <strong>Total {key}:</strong> {total}
+                  </p>
+                  <p>
+                    <strong>Average {key}:</strong> {average}
+                  </p>
+                </>
+              ) : (
+                <p>No numeric column available for summary.</p>
+              )}
+            </div>
+          </div>
+
+          {filteredData.length > 0 ? (
+            <>
+              <div className="filter-bar">
+                <input
+                  type="text"
+                  className="filter-input"
+                  placeholder="Search in data..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
+
+              <h2>Data Table</h2>
+              <table className="data-table">
+                <thead>
+                  <tr>
                     {headers.map((h) => (
-                      <td key={h}>{row[h]}</td>
+                      <th key={h}>{h}</th>
                     ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {filteredData.map((row, idx) => (
+                    <tr key={idx}>
+                      {headers.map((h) => (
+                        <td key={h}>{row[h]}</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
 
-            <h2>Chart</h2>
-            <div className="chart-container">
-              <ChartDisplay />
-            </div>
+              <h2>Chart</h2>
+              <div className="chart-container">
+                <ChartDisplay />
+              </div>
 
-            <div className="export-buttons">
-              <button onClick={exportPDF}>Export as PDF</button>
-            </div>
-          </>
-        ) : (
-          <p className="no-data-msg">
-            No valid data found. Please upload a clean CSV file with at least 2 columns.
-          </p>
-        )}
-      </div>
-    </>
-  );
+              <div className="export-buttons">
+                <button onClick={exportPDF}>Export as PDF</button>
+              </div>
+            </>
+          ) : (
+            <p className="no-data-msg">
+              No valid data found. Please upload a clean CSV file with at least 2 columns.
+            </p>
+          )}
+        </div>
+      </>
+    );
+  } catch (err) {
+    console.error("❌ Rendering failed:", err);
+    return <p style={{ color: "red", padding: "2rem" }}>Something went wrong while rendering the dashboard.</p>;
+  }
 }
 
 export default Dashboard;
