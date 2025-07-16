@@ -12,7 +12,6 @@ function Dashboard() {
   const [file, setFile] = useState(null);
   const [search, setSearch] = useState("");
 
-  // Fetch latest uploaded CSV data
   useEffect(() => {
     axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/csv`)
       .then((res) => {
@@ -20,10 +19,9 @@ function Dashboard() {
         setData(latest);
         setFilteredData(latest);
       })
-      .catch((err) => console.error(err));
+      .catch((err) => console.error("Failed to load dashboard data", err));
   }, []);
 
-  // Handle CSV file upload
   const handleUpload = async () => {
     if (!file) return;
     const formData = new FormData();
@@ -39,7 +37,6 @@ function Dashboard() {
     }
   };
 
-  // Handle filtering logic
   useEffect(() => {
     if (!search.trim()) {
       setFilteredData(data);
@@ -54,7 +51,6 @@ function Dashboard() {
     }
   }, [search, data]);
 
-  // Calculate total & average
   const getSummary = () => {
     if (filteredData.length === 0) return { total: 0, average: 0 };
 
@@ -68,7 +64,6 @@ function Dashboard() {
     return { total: total.toFixed(2), average: average.toFixed(2), key: valueKey };
   };
 
-  // PDF Export
   const exportPDF = async () => {
     const doc = new jsPDF("p", "pt", "a4");
 
@@ -93,7 +88,7 @@ function Dashboard() {
     doc.save("insightboard_dashboard.pdf");
   };
 
-  const headers = filteredData.length ? Object.keys(filteredData[0]) : [];
+  const headers = filteredData.length > 0 ? Object.keys(filteredData[0]) : [];
   const { total, average, key } = getSummary();
 
   return (
@@ -101,7 +96,6 @@ function Dashboard() {
       <Navbar />
       <div className="dashboard-wrapper">
         <div className="csv-upload-row">
-          {/* CSV Upload */}
           <div className="csv-upload-container">
             <input
               type="file"
@@ -111,7 +105,6 @@ function Dashboard() {
             <button onClick={handleUpload}>Upload CSV</button>
           </div>
 
-          {/* Summary Box */}
           <div className="summary-panel">
             <h3>Summary</h3>
             <p><strong>Total {key}:</strong> {total}</p>
@@ -119,8 +112,8 @@ function Dashboard() {
           </div>
         </div>
 
-         {/* Filter Input */}
-          {filteredData.length > 0 && (
+        {filteredData.length > 0 && (
+          <>
             <div className="filter-bar">
               <input
                 type="text"
@@ -130,39 +123,39 @@ function Dashboard() {
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
-          )}
 
-        {/* Data Table */}
-        <h2>Data Table</h2>
-        <table className="data-table">
-          <thead>
-            <tr>
-              {headers.map((h) => (
-                <th key={h}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {filteredData.map((row, idx) => (
-              <tr key={idx}>
-                {headers.map((h) => (
-                  <td key={h}>{row[h]}</td>
+            <h2>Data Table</h2>
+            <table className="data-table">
+              <thead>
+                <tr>
+                  {headers.map((h) => (
+                    <th key={h}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filteredData.map((row, idx) => (
+                  <tr key={idx}>
+                    {headers.map((h) => (
+                      <td key={h}>{row[h]}</td>
+                    ))}
+                  </tr>
                 ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+              </tbody>
+            </table>
 
-        {/* Chart */}
-        <h2>Chart</h2>
-        <div className="chart-container">
-          <ChartDisplay />
-        </div>
+            <h2>Chart</h2>
+            <div className="chart-container">
+              <ChartDisplay />
+            </div>
 
-        {/* Export Button */}
-        <div className="export-buttons">
-          <button onClick={exportPDF}>Export as PDF</button>
-        </div>
+            <div className="export-buttons">
+              <button onClick={exportPDF}>Export as PDF</button>
+            </div>
+          </>
+        )}
+
+        {filteredData.length === 0 && <p className="no-data-msg">No data to display. Please upload a file.</p>}
       </div>
     </>
   );

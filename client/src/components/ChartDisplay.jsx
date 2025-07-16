@@ -36,6 +36,8 @@ const ChartDisplay = () => {
         if (latest.length === 0) return;
 
         const keys = Object.keys(latest[0]);
+        if (keys.length < 2) return;
+
         const labelKey = keys[0];
         const valueKey = keys[1];
         setValueKey(valueKey);
@@ -78,46 +80,23 @@ const ChartDisplay = () => {
     maintainAspectRatio: false,
     scales: {
       x: {
-        ticks: {
-          color: "#ffffff",
-          maxRotation: 90,
-          minRotation: 45,
-          font: {
-            size: 10,
-          },
-        },
-        grid: {
-          color: "rgba(255,255,255,0.1)",
-        },
+        ticks: { color: "#ffffff", font: { size: 10 }, maxRotation: 90, minRotation: 45 },
+        grid: { color: "rgba(255,255,255,0.1)" },
       },
       y: {
-        ticks: {
-          color: "#ffffff",
-          font: {
-            size: 10,
-          },
-        },
-        grid: {
-          color: "rgba(255,255,255,0.1)",
-        },
+        ticks: { color: "#ffffff", font: { size: 10 } },
+        grid: { color: "rgba(255,255,255,0.1)" },
       },
     },
     plugins: {
       legend: {
-        labels: {
-          color: "#ffffff",
-          font: {
-            size: 12,
-          },
-        },
+        labels: { color: "#ffffff", font: { size: 12 } },
       },
       title: {
         display: true,
         text: `Bar + Line Chart for ${valueKey}`,
         color: "#ffffff",
-        font: {
-          size: 18,
-        },
+        font: { size: 18 },
       },
     },
   };
@@ -130,7 +109,7 @@ const ChartDisplay = () => {
             <Bar data={chartData} options={chartOptions} />
           </div>
         ) : (
-          <p className="loading">Loading chart...</p>
+          <p className="loading">No chart data available.</p>
         )}
       </div>
     </div>

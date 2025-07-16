@@ -12,8 +12,9 @@ const DataTable = () => {
       .then(res => {
         const latestData = res.data[res.data.length - 1]?.data || [];
         setData(latestData);
-        setFilteredData(latestData); // default filtered data = all data
-      });
+        setFilteredData(latestData);
+      })
+      .catch((err) => console.error("Failed to fetch CSV data", err));
   }, []);
 
   useEffect(() => {
@@ -22,21 +23,22 @@ const DataTable = () => {
     } else {
       const lowerSearch = search.toLowerCase();
       const filtered = data.filter(row =>
-        Object.values(row).some(
-          val => val?.toString().toLowerCase().includes(lowerSearch)
+        Object.values(row).some(val =>
+          val?.toString().toLowerCase().includes(lowerSearch)
         )
       );
       setFilteredData(filtered);
     }
   }, [search, data]);
 
-  if (filteredData.length === 0) return null;
+  if (!filteredData || filteredData.length === 0) {
+    return <p className="no-data-msg">No data available to display.</p>;
+  }
 
   const headers = Object.keys(filteredData[0]);
 
   return (
     <div className="table-container">
-      {/* Search Input */}
       <div className="filter-bar">
         <input
           type="text"
@@ -50,9 +52,7 @@ const DataTable = () => {
       <table className="data-table">
         <thead>
           <tr>
-            {headers.map(h => (
-              <th key={h}>{h}</th>
-            ))}
+            {headers.map(h => <th key={h}>{h}</th>)}
           </tr>
         </thead>
         <tbody>
