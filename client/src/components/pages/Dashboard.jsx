@@ -16,7 +16,9 @@ function Dashboard() {
     axios
       .get(`${import.meta.env.VITE_API_BASE_URL}/api/csv`)
       .then((res) => {
-        const latest = Array.isArray(res.data) ? res.data[res.data.length - 1]?.data || [] : [];
+        const latest = Array.isArray(res.data)
+          ? res.data[res.data.length - 1]?.data || []
+          : [];
         setData(latest);
         setFilteredData(latest);
       })
@@ -31,7 +33,10 @@ function Dashboard() {
     formData.append("file", file);
 
     try {
-      await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/csv/upload`, formData);
+      await axios.post(
+        `${import.meta.env.VITE_API_BASE_URL}/api/csv/upload`,
+        formData
+      );
       alert("CSV uploaded successfully!");
       window.location.reload();
     } catch (err) {
@@ -55,34 +60,51 @@ function Dashboard() {
   }, [search, data]);
 
   const getSummary = () => {
-    if (!filteredData.length || !filteredData[0]) return { total: 0, average: 0, key: "" };
+    if (!filteredData.length || !filteredData[0]) {
+      return { total: 0, average: 0, key: "" };
+    }
+
     const keys = Object.keys(filteredData[0]);
-    if (keys.length < 2) return { total: 0, average: 0, key: "" };
+    if (keys.length < 2) {
+      return { total: 0, average: 0, key: "" };
+    }
 
     const valueKey = keys[1];
-    const values = filteredData.map((item) => parseFloat(item[valueKey])).filter(Number.isFinite);
+    const values = filteredData
+      .map((item) => parseFloat(item[valueKey]))
+      .filter(Number.isFinite);
+
     const total = values.reduce((acc, curr) => acc + curr, 0);
     const average = values.length ? total / values.length : 0;
 
-    return { total: total.toFixed(2), average: average.toFixed(2), key: valueKey };
+    return {
+      total: total.toFixed(2),
+      average: average.toFixed(2),
+      key: valueKey,
+    };
   };
 
   const exportPDF = async () => {
     const doc = new jsPDF("p", "pt", "a4");
+
     const addElementToPDF = async (selector, yOffset = 40) => {
       const element = document.querySelector(selector);
       if (!element) return yOffset;
+
       const canvas = await html2canvas(element, { scale: 2 });
       const imgData = canvas.toDataURL("image/png");
       const pdfWidth = doc.internal.pageSize.getWidth() - 80;
       const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+
       doc.addImage(imgData, "PNG", 40, yOffset, pdfWidth, imgHeight);
       return yOffset + imgHeight + 30;
     };
+
     let y = 40;
     y = await addElementToPDF(".summary-panel", y);
     y = await addElementToPDF(".data-table", y);
     y = await addElementToPDF(".chart-container", y);
+
     doc.save("insightboard_dashboard.pdf");
   };
 
@@ -105,8 +127,14 @@ function Dashboard() {
 
           <div className="summary-panel">
             <h3>Summary</h3>
-            <p><strong>Total {key}:</strong> {total}</p>
-            <p><strong>Average {key}:</strong> {average}</p>
+            {key ? (
+              <>
+                <p><strong>Total {key}:</strong> {total}</p>
+                <p><strong>Average {key}:</strong> {average}</p>
+              </>
+            ) : (
+              <p>No numeric column available for summary.</p>
+            )}
           </div>
         </div>
 
