@@ -63,32 +63,34 @@ function Dashboard() {
   }, [search, data]);
 
   // Safely calculate total and average
-  const getSummary = () => {
-    if (
-      !filteredData.length ||
-      !filteredData[0] ||
-      typeof filteredData[0] !== "object"
-    ) {
-      return { total: 0, average: 0, key: "" };
-    }
+const getSummary = () => {
+  if (!Array.isArray(filteredData) || filteredData.length === 0) {
+    return { total: 0, average: 0, key: "" };
+  }
 
-    const keys = Object.keys(filteredData[0]);
-    if (keys.length < 2) return { total: 0, average: 0, key: "" };
+  const sample = filteredData.find(
+    (row) =>
+      row && typeof row === "object" && !Array.isArray(row) && Object.keys(row).length > 1
+  );
 
-    const valueKey = keys[1];
-    const values = filteredData
-      .map((item) => parseFloat(item[valueKey]))
-      .filter(Number.isFinite);
+  if (!sample) return { total: 0, average: 0, key: "" };
 
-    const total = values.reduce((acc, curr) => acc + curr, 0);
-    const average = values.length ? total / values.length : 0;
+  const keys = Object.keys(sample);
+  const valueKey = keys[1]; // e.g. "Score"
 
-    return {
-      total: total.toFixed(2),
-      average: average.toFixed(2),
-      key: valueKey,
-    };
+  const values = filteredData
+    .map((item) => parseFloat(item?.[valueKey]))
+    .filter(Number.isFinite);
+
+  const total = values.reduce((acc, curr) => acc + curr, 0);
+  const average = values.length ? total / values.length : 0;
+
+  return {
+    total: total.toFixed(2),
+    average: average.toFixed(2),
+    key: valueKey,
   };
+};
 
   // Export to PDF
   const exportPDF = async () => {
