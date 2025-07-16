@@ -1,6 +1,7 @@
 import React from "react";
 import "./Home.css";
 import Navbar from "../Navbar";
+import { Link } from "react-router-dom";
 
 const Home = () => {
   return (
@@ -17,7 +18,7 @@ const Home = () => {
       <div className="home-content">
         <h1 className="home-heading">Welcome to InsightBoard</h1>
         <p className="home-subtext">Transform CSV data into interactive dashboards with ease.</p>
-        <a href="/dashboard" className="home-button">Get Started</a>
+        <Link to="/dashboard" className="home-button">Get Started</Link>
       </div>
     </div>
 
