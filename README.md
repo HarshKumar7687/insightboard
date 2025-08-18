@@ -1,1 +1,1 @@
-insight bord
+insight board
