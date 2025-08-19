@@ -63,4 +63,4 @@ Organizations often need quick and flexible ways to analyze tabular data without
 
 ---
 
-only csv and excel file can be uploaded
+only csv and excel file can be uploaded.
